@@ -35,6 +35,8 @@ import signal
 from argparse import ArgumentParser
 from gnuradio.eng_arg import eng_float, intx
 from gnuradio import eng_notation
+from gnuradio.qtgui import Range, RangeWidget
+from PyQt5 import QtCore
 import osmosdr
 import time
 
@@ -82,19 +84,23 @@ class lesson1(gr.top_block, Qt.QWidget):
         self.channel_width = channel_width = 200e3
         self.channel_freq = channel_freq = 96.5e6
         self.center_freq = center_freq = 97.9e6
+        self.audio_gain = audio_gain = 0.2
 
         ##################################################
         # Blocks
         ##################################################
+        self._audio_gain_range = Range(0, 1, 0.001, 0.2, 200)
+        self._audio_gain_win = RangeWidget(self._audio_gain_range, self.set_audio_gain, "'audio_gain'", "slider", float, QtCore.Qt.Horizontal)
+        self.top_layout.addWidget(self._audio_gain_win)
         self.rational_resampler_xxx_0 = filter.rational_resampler_ccc(
                 interpolation=12,
                 decimation=5,
                 taps=[],
                 fractional_bw=0)
-        self.qtgui_sink_x_0 = qtgui.sink_c(
+        self.qtgui_sink_x_0_0 = qtgui.sink_c(
             1024, #fftsize
             window.WIN_BLACKMAN_hARRIS, #wintype
-            center_freq, #fc
+            channel_freq, #fc
             samp_rate, #bw
             "", #name
             True, #plotfreq
@@ -103,12 +109,12 @@ class lesson1(gr.top_block, Qt.QWidget):
             True, #plotconst
             None # parent
         )
-        self.qtgui_sink_x_0.set_update_time(1.0/10)
-        self._qtgui_sink_x_0_win = sip.wrapinstance(self.qtgui_sink_x_0.qwidget(), Qt.QWidget)
+        self.qtgui_sink_x_0_0.set_update_time(1.0/10)
+        self._qtgui_sink_x_0_0_win = sip.wrapinstance(self.qtgui_sink_x_0_0.qwidget(), Qt.QWidget)
 
-        self.qtgui_sink_x_0.enable_rf_freq(False)
+        self.qtgui_sink_x_0_0.enable_rf_freq(False)
 
-        self.top_layout.addWidget(self._qtgui_sink_x_0_win)
+        self.top_layout.addWidget(self._qtgui_sink_x_0_0_win)
         self.osmosdr_source_0 = osmosdr.source(
             args="numchan=" + str(1) + " " + ""
         )
@@ -134,6 +140,7 @@ class lesson1(gr.top_block, Qt.QWidget):
                 window.WIN_HAMMING,
                 6.76))
         self.blocks_multiply_xx_0 = blocks.multiply_vcc(1)
+        self.blocks_multiply_const_vxx_0 = blocks.multiply_const_ff(audio_gain)
         self.audio_sink_0 = audio.sink(48000, '', True)
         self.analog_wfm_rcv_0 = analog.wfm_rcv(
         	quad_rate=480e3,
@@ -146,11 +153,12 @@ class lesson1(gr.top_block, Qt.QWidget):
         # Connections
         ##################################################
         self.connect((self.analog_sig_source_x_0, 0), (self.blocks_multiply_xx_0, 1))
-        self.connect((self.analog_wfm_rcv_0, 0), (self.audio_sink_0, 0))
+        self.connect((self.analog_wfm_rcv_0, 0), (self.blocks_multiply_const_vxx_0, 0))
+        self.connect((self.blocks_multiply_const_vxx_0, 0), (self.audio_sink_0, 0))
         self.connect((self.blocks_multiply_xx_0, 0), (self.low_pass_filter_0, 0))
+        self.connect((self.blocks_multiply_xx_0, 0), (self.qtgui_sink_x_0_0, 0))
         self.connect((self.low_pass_filter_0, 0), (self.rational_resampler_xxx_0, 0))
         self.connect((self.osmosdr_source_0, 0), (self.blocks_multiply_xx_0, 0))
-        self.connect((self.osmosdr_source_0, 0), (self.qtgui_sink_x_0, 0))
         self.connect((self.rational_resampler_xxx_0, 0), (self.analog_wfm_rcv_0, 0))
 
 
@@ -170,7 +178,7 @@ class lesson1(gr.top_block, Qt.QWidget):
         self.analog_sig_source_x_0.set_sampling_freq(self.samp_rate)
         self.low_pass_filter_0.set_taps(firdes.low_pass(1, self.samp_rate, 75e3, 25e3, window.WIN_HAMMING, 6.76))
         self.osmosdr_source_0.set_sample_rate(self.samp_rate)
-        self.qtgui_sink_x_0.set_frequency_range(self.center_freq, self.samp_rate)
+        self.qtgui_sink_x_0_0.set_frequency_range(self.channel_freq, self.samp_rate)
 
     def get_channel_width(self):
         return self.channel_width
@@ -184,6 +192,7 @@ class lesson1(gr.top_block, Qt.QWidget):
     def set_channel_freq(self, channel_freq):
         self.channel_freq = channel_freq
         self.analog_sig_source_x_0.set_frequency((self.center_freq - self.channel_freq))
+        self.qtgui_sink_x_0_0.set_frequency_range(self.channel_freq, self.samp_rate)
 
     def get_center_freq(self):
         return self.center_freq
@@ -192,7 +201,13 @@ class lesson1(gr.top_block, Qt.QWidget):
         self.center_freq = center_freq
         self.analog_sig_source_x_0.set_frequency((self.center_freq - self.channel_freq))
         self.osmosdr_source_0.set_center_freq(self.center_freq, 0)
-        self.qtgui_sink_x_0.set_frequency_range(self.center_freq, self.samp_rate)
+
+    def get_audio_gain(self):
+        return self.audio_gain
+
+    def set_audio_gain(self, audio_gain):
+        self.audio_gain = audio_gain
+        self.blocks_multiply_const_vxx_0.set_k(self.audio_gain)
 
 
 
