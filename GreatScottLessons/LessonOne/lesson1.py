@@ -89,6 +89,9 @@ class lesson1(gr.top_block, Qt.QWidget):
         ##################################################
         # Blocks
         ##################################################
+        self._channel_freq_range = Range(88e6, 108e6, 1e5, 96.5e6, 200)
+        self._channel_freq_win = RangeWidget(self._channel_freq_range, self.set_channel_freq, "'channel_freq'", "counter_slider", float, QtCore.Qt.Horizontal)
+        self.top_layout.addWidget(self._channel_freq_win)
         self._audio_gain_range = Range(0, 1, 0.001, 0.2, 200)
         self._audio_gain_win = RangeWidget(self._audio_gain_range, self.set_audio_gain, "'audio_gain'", "slider", float, QtCore.Qt.Horizontal)
         self.top_layout.addWidget(self._audio_gain_win)

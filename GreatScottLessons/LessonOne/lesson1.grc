@@ -77,6 +77,27 @@ blocks:
     bus_structure: null
     coordinate: [24, 184.0]
     rotation: 0
+    state: disabled
+- name: channel_freq
+  id: variable_qtgui_range
+  parameters:
+    comment: ''
+    gui_hint: ''
+    label: ''
+    min_len: '200'
+    orient: QtCore.Qt.Horizontal
+    rangeType: float
+    start: 88e6
+    step: 1e5
+    stop: 108e6
+    value: 96.5e6
+    widget: counter_slider
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [152, 400.0]
+    rotation: 0
     state: true
 - name: channel_width
   id: variable
